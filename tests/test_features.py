@@ -481,3 +481,28 @@ def test_a_step_is_named_by_what_it_did():
     assert describe_step("Read", {"file_path": "/x/a.pdf"})[0] == "Read a.pdf"
     assert describe_step("Grep", {"pattern": "gym"}) == ("Searched files", "gym")
     assert describe_step("mcp__milo-planner__day_view", {}) == ("", "")
+
+
+def test_the_conversation_log_keeps_every_message(tmp_path):
+    """One Markdown file a day; the first start writes what Milo already has, once (BEHAVIOR #98)."""
+    from features import ConversationLog
+    log = ConversationLog(tmp_path / "Conversations")
+    nov11, nov12 = datetime(2026, 11, 11, 21, 0).timestamp(), datetime(2026, 11, 12, 8, 5).timestamp()
+    n = log.backfill([("the main chat", [{"role": "user", "text": "Plan my day", "ts": nov11},
+                                         {"role": "assistant", "text": "Here is the plan.", "ts": nov11 + 60,
+                                          "tools": [{"title": "Read Tasks.md"}]},
+                                         {"role": "assistant", "text": "", "ts": nov11 + 61}]),
+                      ('"Diet" (cleared)', [{"role": "user", "text": "More fiber?", "ts": nov12}])])
+    assert n == 4 and log.backfill([("x", [{"role": "user", "text": "again", "ts": nov11}])]) == 0   # once only
+    day = (tmp_path / "Conversations" / "2026-11" / "2026-11-11.md").read_text()
+    assert day.startswith("# Conversations, Wednesday 2026-11-11\n")
+    assert "## 21:00 You, in the main chat\n\nPlan my day\n" in day
+    assert "## 21:01 Milo, in the main chat\n\nHere is the plan.\n\nSteps: Read Tasks.md\n" in day
+    assert "again" not in day and day.count("## ") == 2                       # empty replies are skipped
+    log.add({"role": "assistant", "text": "Two meetings today.", "ts": nov12 + 60, "from_task": "Morning briefing"},
+            "the main chat")
+    log.add({"role": "user", "text": "Brief me", "ts": nov12 + 30, "scheduled": True, "task": "Morning briefing"},
+            "Morning briefing (task)")
+    later = (tmp_path / "Conversations" / "2026-11" / "2026-11-12.md").read_text()
+    assert '## 08:05 You, in "Diet" (cleared)' in later and "## 08:06 Milo (Morning briefing), in the main chat" in later
+    assert "## 08:05 Task: Morning briefing, in Morning briefing (task)\n\nBrief me" in later

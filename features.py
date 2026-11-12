@@ -606,6 +606,55 @@ class Activity:
 # Library
 
 
+class ConversationLog:
+    """Every message of every chat, kept for good (BEHAVIOR #98): one Markdown file a day, in the Conversations folder
+    next to the Library. conversations.json keeps only the newest chats and loses a deleted one; this log only grows."""
+
+    def __init__(self, root: Path):
+        self.root = root
+
+    def path(self, ts: float) -> Path:
+        d = datetime.fromtimestamp(ts)
+        return self.root / f"{d:%Y-%m}" / f"{d:%Y-%m-%d}.md"
+
+    @staticmethod
+    def entry(msg: dict, title: str) -> str:
+        when = datetime.fromtimestamp(msg.get("ts") or time.time())
+        if msg.get("role") == "user":
+            who = f"Task: {msg['task']}" if msg.get("scheduled") and msg.get("task") else "You"
+        else:
+            who = f"Milo ({msg['from_task']})" if msg.get("from_task") else "Milo"
+        steps = [t.get("title") for t in msg.get("tools") or [] if t.get("title")]
+        out = f"\n## {when:%H:%M} {who}, in {title}\n\n{msg.get('text', '').strip()}\n"
+        if steps:
+            out += f"\nSteps: {', '.join(steps)}\n"
+        if msg.get("error"):
+            out += f"\nError: {msg['error']}\n"
+        return out
+
+    def add(self, msg: dict, title: str) -> None:
+        if not (msg.get("text") or "").strip():
+            return
+        f = self.path(msg.get("ts") or time.time())
+        f.parent.mkdir(parents=True, exist_ok=True)
+        new = not f.exists()
+        with open(f, "a") as fh:
+            if new:
+                fh.write(f"# Conversations, {datetime.fromtimestamp(msg.get('ts') or time.time()):%A %Y-%m-%d}\n")
+            fh.write(self.entry(msg, title))
+
+    def backfill(self, chats: list[tuple[str, list[dict]]]) -> int:
+        """The first time: every message Milo still has, in time order. Returns how many were written."""
+        if self.root.exists():
+            return 0
+        rows = sorted(((m.get("ts") or 0, title, m) for title, msgs in chats for m in msgs if m.get("ts")),
+                      key=lambda r: r[0])
+        for _, title, m in rows:
+            self.add(m, title)
+        self.root.mkdir(parents=True, exist_ok=True)
+        return len(rows)
+
+
 class Library:
     def __init__(self, root: Path):
         self.root = root

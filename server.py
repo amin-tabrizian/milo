@@ -41,7 +41,7 @@ from feed import (MOST as FEED_MOST, TABS as FEED_TABS, TIMELINES, Feed, SignedO
 from google_mcp import GoogleMCPApp, GoogleTools
 from features import (COMPACT_PROMPT, COMPACTED, GOALS_UPDATE, IDEAS_PROMPT, MEMORY_UPDATE, NOTICE_PROMPT,
                       NOTICE_WORDS, REACT_EVERY, REACT_PROMPT, REACTIONS, RECENT_MAIN, SCHEDULED_RUN, SCHEDULES_UPDATE, TASK_POSTS,
-                      TITLE_PROMPT, Activity, Favorites, Goals, Ideas, JsonFile, Library, Memory, Push, Scheduler,
+                      TITLE_PROMPT, Activity, ConversationLog, Favorites, Goals, Ideas, JsonFile, Library, Memory, Push, Scheduler,
                       build_context, clean_notice, clean_temp, find_picture, clean_reaction, clean_title, extract_directives, extract_goals,
                       extract_quiet, extract_reaction, extract_restart, describe_step, GENERIC_STEPS, extract_say, extract_suggestion, fit_words, parse_ideas, parse_usage, plan_name, react_chance,
                       recent_messages, task_posts, when_label, zip_stream)
@@ -304,6 +304,7 @@ class Hub:
         self.naming: dict[str, str] = {}   # chats Milo is naming: sid -> goose's own title, used if naming fails
         self.activity = Activity(DATA / "activity.json")
         self.library = Library(Path(CFG["library_dir"]))
+        self.convlog = ConversationLog(Path(CFG.get("conversations_dir") or Path(CFG["library_dir"]).parent / "Conversations"))
         # Rules for one kind of work, one file per topic, so memory stays short: only their index goes in every chat
         self.instructions = Path(CFG.get("instructions_dir") or Path(CFG["library_dir"]).parent / "Instructions")
         # Plots Milo shows in a reply, kept out of the Library unless the user asks to save them (BEHAVIOR #76)
@@ -717,6 +718,7 @@ class Hub:
             self.scheduler.update_run(run, "queued")
         conv.messages.append(msg)
         conv.updated = time.time()
+        self.log_message(conv, msg)
         await self.broadcast({"t": "user", "id": conv.id, "text": text, "voice": voice, "queued": queued,
                               "scheduled": scheduled, "task": msg.get("task"), "ts": msg["ts"]})
         if not scheduled:
@@ -906,6 +908,7 @@ class Hub:
             self.scheduler.update_run(asked["run"], status, error or answer)
             await self.broadcast({"t": "schedules"})
         conv.updated = time.time()
+        self.log_message(conv, msg)
         self.save()
         # queued: messages still waiting; the first runs next, and none means Stop dropped them
         await self.broadcast({"t": "done", "id": conv.id, "stop": stop, "error": error, "voice": voice, "message": msg,
@@ -926,6 +929,32 @@ class Hub:
         if restart and not error and stop != "cancelled" and not asked.get("scheduled"):
             self.restart_soon(conv.id)
 
+    def log_message(self, conv: Conversation, msg: dict) -> None:
+        """The permanent log (ConversationLog). A failure there must never stop a chat."""
+        try:
+            where = ("the main chat" if conv.main else f"{self.schedule_title(conv)} (task)" if conv.schedule
+                     else f'"{conv.title}"')
+            self.convlog.add(msg, where)
+        except Exception:
+            log.exception("conversation log")
+
+    def backfill_log(self) -> None:
+        """The first start with the log: every message Milo still has, cleared chats too."""
+        chats = [("the main chat" if c.main else f"{self.schedule_title(c)} (task)" if c.schedule else f'"{c.title}"',
+                  c.messages) for c in self.convs.values()]
+        for f in sorted((DATA / "cleared").glob("*.jsonl")) if (DATA / "cleared").exists() else []:
+            for line in f.read_text().splitlines():
+                try:
+                    old = json.loads(line)
+                except ValueError:
+                    continue
+                chats.append((f'"{old.get("title") or "a chat"}" (cleared)', old.get("messages") or []))
+        try:
+            if n := self.convlog.backfill(chats):
+                log.info("conversation log: wrote %d earlier messages to %s", n, self.convlog.root)
+        except Exception:
+            log.exception("conversation log backfill")
+
     async def post_to_main(self, title: str, msg: dict, answer: str, instruction: str = "") -> None:
         """A scheduled task's reply, as Milo's own message in the main chat, like a person texting you: no "ran" line, no
         steps, only the answer (and its weather cards). The task worked in its hidden chat. The main session hears
@@ -938,6 +967,7 @@ class Hub:
         if msg.get("suggest"):
             post["suggest"] = msg["suggest"]
         main.messages.append(post)
+        self.log_message(main, post)
         # the task's instruction comes along: the user's answer here finishes the task (log it, update the list)
         main.inbox.append({"task": title, "ts": post["ts"], "text": answer, "instruction": instruction})
         main.updated = time.time()
@@ -1377,6 +1407,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         log.error("voice input disabled: %s", e)
     hub.scheduler.start()
+    await asyncio.to_thread(hub.backfill_log)
     browser_task = asyncio.create_task(start_browser()) if CFG["browser_enabled"] else None
     google_task = asyncio.create_task(start_google())
     web_task = asyncio.create_task(watch_web())

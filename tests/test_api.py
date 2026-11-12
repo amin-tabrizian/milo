@@ -1820,3 +1820,19 @@ def test_a_task_run_sees_the_main_chats_latest_messages(srv, monkeypatch):
     run, said = prompts
     assert "main chat" in run and "User: Remove the workshop review" in run and "You: Removed it." in run
     assert "Old news" not in run and said == "hello"                             # only the task run gets it
+
+
+def test_every_message_goes_to_the_conversation_log(srv, monkeypatch):
+    """The user's message and Milo's reply land in the day's file in the Conversations folder (BEHAVIOR #98)."""
+    hub = srv.hub
+    fake_goose(hub, monkeypatch, reply="Noted, see you tomorrow.")
+
+    async def go():
+        conv = await hub.new_conversation(title="Evening")
+        await hub.submit(conv, "Logging off for today", False)
+        await conv.done.wait()
+        hub.convs.pop(conv.id)
+    asyncio.run(go())
+    assert hub.convlog.root == srv.Path(srv.CFG["library_dir"]).parent / "Conversations"
+    text = hub.convlog.path(time.time()).read_text()
+    assert 'You, in "Evening"\n\nLogging off for today\n' in text and 'Milo, in "Evening"\n\nNoted, see you tomorrow.\n' in text

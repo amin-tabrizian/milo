@@ -5,6 +5,7 @@ What Milo does, and where each part is in the code. To install Milo, see [INSTAL
 ## What it does
 
 - **One main chat.** Milo opens on one chat that continues, like a conversation with a person. Side chats are for separate topics. You cannot clear a chat. Milo compacts long chats automatically, and you do not see it.
+- **Conversation log.** Every message is kept on the Mac, one Markdown file a day in `~/Documents/Milo/Conversations`.
 - **Chat and voice.** Type, hold the mic to talk, or use the hands-free voice mode. Speech-to-text (whisper.cpp) and text-to-speech (Kokoro) run on the Mac.
 - **Background work and alerts.** Tasks continue on the Mac after you close the app. A push alert comes when a task is done.
 - **Approval cards.** Before Milo sends, deletes, buys or runs something that changes data, the phone asks you.
