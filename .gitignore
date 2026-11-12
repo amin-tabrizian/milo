@@ -10,3 +10,5 @@ reports/
 /toc.pdf
 # private: see README.md "Private files"
 /BEHAVIOR.md
+/CLAUDE.local.md
+/local/
