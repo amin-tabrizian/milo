@@ -1,0 +1,4 @@
+#!/bin/sh
+# Blocks a push that would publish personal data (see scripts/check_private.py). Enable with:
+#   git config core.hooksPath .githooks
+exec python3 "$(git rev-parse --show-toplevel)/scripts/check_private.py" "$@"

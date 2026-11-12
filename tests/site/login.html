@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Sign in · Milo Test Site</title></head>
+<body><h1>Sign in</h1>
+<form id="login">
+  <label>Username <input id="username" name="username" type="text" autocomplete="username"></label><br>
+  <label>Password <input id="password" name="password" type="password" autocomplete="current-password"></label><br>
+  <button type="submit">Log in</button>
+</form>
+<p id="status">Not signed in</p>
+<script>
+// The page knows only a hash of the right password, so the password never appears in the DOM.
+const EXPECTED = "0c0deb09a9d7bdb7016eb4e3ae362697df1ef5f42cbb5865633ae2eac0dd3f49";
+async function sha256(s) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+document.getElementById("login").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const user = document.getElementById("username").value;
+  const ok = (await sha256(document.getElementById("password").value)) === (window.EXPECTED_HASH || EXPECTED);
+  document.getElementById("status").textContent = ok ? `Welcome, ${user}` : "Wrong password";
+});
+</script></body></html>

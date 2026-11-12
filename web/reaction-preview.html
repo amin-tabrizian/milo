@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Milo reactions: drafts</title>
+<style>
+:root { --bg:#faf9f5; --surface:#fff; --surface-2:#f2efe8; --ink:#24231f; --muted:#6f6c64; --line:#e8e4da; --accent:#c45f3d;
+  --splash:linear-gradient(#faf9f5,#eee9df); --user:#b5583a; --user-ink:#fff; --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);
+  --cloud-shadow:drop-shadow(0 6px 10px rgba(94,67,54,.14)) drop-shadow(0 1px 1.5px rgba(94,67,54,.12)); --k:1; }
+@media (prefers-color-scheme: dark) { :root { --bg:#262624; --surface:#30302e; --surface-2:#3a3936; --ink:#f3f1ec; --muted:#b0ada5; --line:#42413d;
+  --accent:#e6916f; --splash:linear-gradient(#2f2e2b,#262624); --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  --cloud-shadow:drop-shadow(0 6px 12px rgba(0,0,0,.4)) drop-shadow(0 1px 1.5px rgba(0,0,0,.3)); } }
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { margin:0; background:var(--bg); color:var(--ink); }
+body { font:15px/1.4 -apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif; padding:0 14px calc(env(safe-area-inset-bottom) + 40px); }
+button { font:inherit; color:inherit; cursor:pointer; }
+h1 { font-size:20px; margin:0; }
+.sub { margin:10px 0 0; color:var(--muted); font-size:13.5px; }
+
+.picker { position:sticky; top:0; z-index:20; margin:0 -14px; padding:8px 14px 10px; padding-top:calc(env(safe-area-inset-top) + 8px);
+  background:color-mix(in srgb,var(--bg) 86%,transparent); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); }
+.top { display:flex; align-items:center; gap:8px; margin:0 0 8px -8px; }
+.back { display:inline-flex; align-items:center; gap:2px; min-width:44px; min-height:44px; padding:0 12px 0 6px; border:0; border-radius:999px; background:var(--surface); box-shadow:var(--shadow); color:var(--accent); font-size:16px; font-weight:600; }
+.back svg { width:22px; height:22px; }
+.emojis { display:grid; grid-template-columns:repeat(8,1fr); gap:5px; }
+.emojis button { font-size:22px; line-height:1; aspect-ratio:1; border-radius:14px; border:1px solid var(--line); background:var(--surface); padding:0; transition:transform .15s; }
+.emojis button:active { transform:scale(.9); }
+.emojis button.on { border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent); }
+.row { display:flex; gap:8px; margin-top:8px; align-items:center; }
+.seg { display:inline-flex; border:1px solid var(--line); border-radius:999px; background:var(--surface); padding:2px; }
+.seg button { border:0; background:none; padding:5px 11px; border-radius:999px; font-size:13px; color:var(--muted); }
+.seg button.on { background:var(--surface-2); color:var(--ink); font-weight:600; }
+.play { margin-left:auto; border:0; border-radius:999px; background:var(--accent); color:#fff; padding:7px 14px; font-size:13.5px; font-weight:600; }
+
+.card { background:var(--surface); border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:14px 0 6px; margin:14px -14px; }
+.card h2, .card p { padding:0 14px; }
+.card h2 { font-size:16px; margin:0; display:flex; align-items:baseline; gap:8px; }
+.card h2 small { color:var(--muted); font-weight:500; font-size:13px; }
+.card p { margin:2px 0 10px; color:var(--muted); font-size:13px; }
+.replay { display:block; margin:6px auto 0; border:0; background:none; color:var(--accent); font-weight:600; font-size:14px; padding:6px 14px; }
+
+/* a slice of the real app: header with the 68px avatar, a user message under it */
+.stage { position:relative; height:calc(256px * var(--k)); background:var(--bg); overflow:hidden; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.mock-btn { position:absolute; top:calc(58px * var(--k) + 12px); width:44px; height:44px; border-radius:50%; background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow); display:grid; place-items:center; color:var(--muted); }
+.mock-btn.l { left:14px; } .mock-btn.r { right:14px; }
+.mock-btn svg { width:18px; height:18px; }
+.zoom .mock-btn { display:none; }
+.av { position:absolute; left:var(--ax); top:calc(58px * var(--k)); width:calc(68px * var(--k)); translate:-50% 0; display:flex; flex-direction:column; align-items:center; }
+.face { width:calc(68px * var(--k)); height:calc(68px * var(--k)); border-radius:50%; overflow:hidden; background:var(--splash); border:1px solid var(--line); box-shadow:var(--shadow); }
+.face canvas { display:block; width:100%; height:100%; }
+.name { margin-top:-4px; padding:4px 12px; border-radius:999px; background:color-mix(in srgb,var(--surface) 88%,transparent); border:1px solid var(--line); font-size:14px; font-weight:600; position:relative; }
+.msg { position:absolute; right:14px; bottom:calc(22px * var(--k)); max-width:78%; padding:10px 14px; border-radius:20px; border-bottom-right-radius:6px; background:var(--user); color:var(--user-ink); font-size:15px; line-height:1.34; }
+.chip { position:absolute; left:-12px; top:-14px; font-size:15px; line-height:1; padding:5px 6px; border-radius:999px; background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow); color:var(--ink); }
+.chip[hidden] { display:block; visibility:hidden; }
+
+/* the effects layer: its origin is the avatar's center; everything in it is placed with transforms */
+.fx { position:absolute; left:var(--ax); top:calc(58px * var(--k) + 34px * var(--k)); width:0; height:0; z-index:5; pointer-events:none; }
+.fx > * { position:absolute; left:0; top:0; will-change:transform,opacity; }
+.cloud { width:calc(44px * var(--k)); height:calc(32px * var(--k)); filter:var(--cloud-shadow); }
+.cloud svg { display:block; width:100%; height:100%; overflow:visible; }
+.puff { border-radius:50%; background:radial-gradient(circle at 35% 30%,#fff,#f6f0e6 60%,#ebe2d4); filter:var(--cloud-shadow); }
+.sad .puff { background:radial-gradient(circle at 35% 30%,#f7f9fb,#dfe6ee 60%,#cbd5e1); }
+.emoji { font-size:calc(16px * var(--k)); line-height:1; font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif; }
+.flash { width:calc(64px * var(--k)); height:calc(64px * var(--k)); border-radius:50%; }
+/* particles live in a disc around the avatar and fade out at its rim, so nothing goes more than about half out of the circle */
+.fx > .pl { left:calc(-60px * var(--k)); top:calc(-60px * var(--k)); width:calc(120px * var(--k)); height:calc(120px * var(--k));
+  -webkit-mask-image:radial-gradient(circle, #000 calc(44px * var(--k)), transparent calc(60px * var(--k)));
+  mask-image:radial-gradient(circle, #000 calc(44px * var(--k)), transparent calc(60px * var(--k))); }
+.fx > .pl { z-index:1; } .fx > .emoji { z-index:2; }   /* bits fly over the cloud, under the emoji */
+.pl > * { position:absolute; left:50%; top:50%; will-change:transform,opacity; }
+.p { display:block; }
+.p svg { display:block; width:100%; height:100%; overflow:visible; }
+.p.confetti { border-radius:2px; }
+.p.line { border-radius:9px; }
+.p.ring { border-radius:50%; background:none !important; }
+.p.glow { border-radius:50%; filter:blur(1px); }
+.p.dot { border-radius:50%; }
+.note { color:var(--muted); font-size:12.5px; margin:16px 2px 0; }
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gCloud" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="70"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#fbf7f0"/><stop offset="1" stop-color="#ece3d5"/></linearGradient>
+    <linearGradient id="gCloudSad" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="70"><stop offset="0" stop-color="#f8fafc"/><stop offset=".55" stop-color="#e3e9f0"/><stop offset="1" stop-color="#c9d3df"/></linearGradient>
+    <linearGradient id="gFlame" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd25e"/><stop offset=".55" stop-color="#ff8a3d"/><stop offset="1" stop-color="#e2502a"/></linearGradient>
+    <linearGradient id="gCore" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff6c8"/><stop offset="1" stop-color="#ffc248"/></linearGradient>
+  </defs>
+</svg>
+
+<div class="picker">
+  <div class="top"><button class="back" id="back" aria-label="Back to Milo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Milo</button><h1>Reactions</h1></div>
+  <div class="emojis" id="picker"></div>
+  <div class="row">
+    <span class="seg" id="size"><button data-k="1" class="on">Real size</button><button data-k="2">2x</button></span>
+    <span class="seg" id="land"><button data-v="1" class="on">Land on message</button><button data-v="0">Off</button></span>
+  </div>
+  <div class="row"><button class="play" id="playAll" style="margin-left:0;width:100%">Play all</button></div>
+</div>
+
+<p class="sub">Drafts with the real 3D Milo, at header size. Pick an emoji.</p>
+<div class="card" data-opt="A"><h2>A <small>Puff</small></h2>
+  <p>A small cloud puffs out of Milo's head with the emoji. A few themed bits drift up from it.</p>
+  <div class="stage"></div><button class="replay">Replay</button></div>
+<div class="card" data-opt="B"><h2>B <small>Thought</small></h2>
+  <p>Milo looks up; two bubbles rise from his head into a thought cloud, like his thinking bubble. Themed bits float out of it.</p>
+  <div class="stage"></div><button class="replay">Replay</button></div>
+<div class="card" data-opt="C"><h2>C <small>Burst</small></h2>
+  <p>The cloud pops, the emoji punches in, and a burst of themed particles flies out: hearts, flames, confetti, tears.</p>
+  <div class="stage"></div><button class="replay">Replay</button></div>
+
+<p class="note">Particles: hearts for love, flames and embers for fire, gold sparks for thumbs up, flying tears for laugh, surprise lines for wow, confetti for party, soft glow for thanks, rain from a grey cloud for sad. Milo moves too: a head tilt and squint for love, a nod for thumbs up, a hop for party, a bow for thanks, a droop for sad.</p>
+
+<script>
+// back to the app: opened inside Milo (a frame over the app), the app closes it; else the previous page if it was
+// Milo, else the app's start page, which then skips its hello (the splash)
+document.getElementById('back').onclick = () => {
+  if (window.parent !== window) { window.parent.postMessage('milo:back', location.origin); return; }
+  try { localStorage.setItem('milo-back', String(Date.now())); } catch (e) {}
+  let same = false; try { same = new URL(document.referrer).origin === location.origin; } catch (e) {}
+  if (same && history.length > 1) { history.back(); setTimeout(() => location.replace('/'), 600); } else location.replace('/');
+};
+</script>
+<script type="module" src="reaction-preview.js"></script>
+</body></html>

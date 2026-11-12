@@ -1,0 +1,1 @@
+Mermaid 12.2.0 (mermaid from npm, MIT), ESM build with its lazy chunks (no source maps). Renders ```mermaid blocks in chat replies (app.js). Loaded only when a reply has one.

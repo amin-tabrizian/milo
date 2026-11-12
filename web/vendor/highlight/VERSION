@@ -1,0 +1,1 @@
+highlight.js 11.11.1 (@highlightjs/cdn-assets, BSD-3-Clause, common languages build), colors code blocks in chat replies (app.js md()). Loaded only when a reply has a code block.

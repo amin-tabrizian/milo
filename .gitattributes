@@ -1,0 +1,10 @@
+# private.py: real names and emails stay in the files on this Mac; commits get the fake ones from data/private.json
+*.py filter=private
+*.md filter=private
+*.json filter=private
+*.js filter=private
+*.html filter=private
+*.css filter=private
+*.sh filter=private
+*.toml filter=private
+web/vendor/** -filter

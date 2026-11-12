@@ -1,0 +1,7 @@
+# Copy to data/private_terms.txt (gitignored) and list what must never be pushed: one regex per line, no case.
+# Your names, emails, hostnames, home path, the people you work with, places, accounts, and personal topics.
+\bjane\b
+doe-family
+jane\.doe@example\.com
+my-mac\.tailnet-1234\.ts\.net
+/Users/janedoe

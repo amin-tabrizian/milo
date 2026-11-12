@@ -1,0 +1,12 @@
+.venv/
+data/
+models/
+__pycache__/
+.playwright-mcp/
+.pytest_cache/
+.DS_Store
+reports/
+*.wav
+/toc.pdf
+# private: see README.md "Private files"
+/BEHAVIOR.md
